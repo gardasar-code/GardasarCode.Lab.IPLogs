@@ -1,0 +1,126 @@
+﻿services:
+  
+  migration:
+    image: iplogs-migration
+    container_name: iplogs-migration
+    hostname: migration
+    stop_grace_period: 30s
+    restart: "on-failure"
+    build:
+      context: .
+      dockerfile: src/IpLogsDB/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - CONNECTIONSTRINGS__DB=Server=postgres;Port=5432;Userid=postgres;Password=${POSTGRES_PASSWORD};Database=${POSTGRES_DB};
+      - LOGGING__LOGLEVEL__DEFAULT=NONE
+      - SERILOG__MINIMUMLEVEL__DEFAULT=DEBUG
+  
+  generator:
+    image: iplogs-generator
+    container_name: iplogs-generator
+    hostname: generator
+    stop_grace_period: 30s
+    build:
+      context: .
+      dockerfile: src/IpLogsEventsGenerator/Dockerfile
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA__BROKER=kafka:9092
+      - KAFKA__TOPIC=${KAFKA_TOPIC}
+      - LOGGING__LOGLEVEL__DEFAULT=NONE
+      - SERILOG__MINIMUMLEVEL__DEFAULT=DEBUG
+
+  consumer:
+    image: iplogs-consumer
+    container_name: iplogs-consumer
+    hostname: consumer
+    stop_grace_period: 30s
+    build:
+      context: .
+      dockerfile: src/IpLogsEventsConsumer/Dockerfile
+    depends_on:
+      - kafka
+      - redis
+      - postgres
+    environment:
+      - CONNECTIONSTRINGS__DB=Server=postgres;Port=5432;Userid=postgres;Password=${POSTGRES_PASSWORD};Database=${POSTGRES_DB};
+      - KAFKA__TOPIC=${KAFKA_TOPIC}
+      - KAFKA__BROKER=kafka:9092
+      - KAFKA__CONSUMERGROUP=${KAFKA_CONSUMER_GROUP}
+      - REDIS__CONNECTION=redis:6379
+      - REDIS__EXPIRATION=10
+      - LOGGING__LOGLEVEL__DEFAULT=NONE
+      - SERILOG__MINIMUMLEVEL__DEFAULT=DEBUG
+
+  api:
+    image: iplogs-api
+    container_name: iplogs-api
+    hostname: api
+    stop_grace_period: 30s
+    build:
+      context: .
+      dockerfile: src/IpLogsAPI/Dockerfile
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - 8080:8080
+    environment:
+      - CONNECTIONSTRINGS__DB=Server=postgres;Port=5432;Userid=postgres;Password=${POSTGRES_PASSWORD};Database=${POSTGRES_DB};
+      - REDIS__CONNECTION=redis:6379
+      - REDIS__EXPIRATION=10
+      - LOGGING__LOGLEVEL__DEFAULT=NONE
+      - SERILOG__MINIMUMLEVEL__DEFAULT=DEBUG
+  
+  postgres:
+    image: postgres:16
+    container_name: iplogs-postgres
+    hostname: postgres
+    stop_grace_period: 30s
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+  
+  kafka:
+    image: bitnami/kafka:3.3
+    container_name: iplogs-kafka
+    hostname: kafka
+    ports:
+      - 9092:9092
+    volumes:
+      - kafka-data:/bitnami
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+  
+  redis:
+    image: redis
+    container_name: iplogs-redis
+    hostname: redis
+    ports:
+      - 6379:6379
+    volumes:
+      - redis-data:/data
+
+volumes:
+  postgres-data:
+  kafka-data:
+  redis-data:

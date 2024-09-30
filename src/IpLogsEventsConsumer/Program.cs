@@ -82,7 +82,7 @@ public class Program
                 try
                 {
                     if (eventConsumer != null)
-                        await eventConsumer.Consume(Cts.Token);
+                        await eventConsumer.ConsumeAsync(Cts.Token);
                     await Task.Delay(1_000, Cts.Token);
                 }
                 catch (Exception e)

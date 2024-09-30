@@ -68,7 +68,7 @@ public class Program
             {
                 var eventMessage = eventGenerator?.Generate();
                 if (eventMessage != null && eventProducer != null)
-                    await eventProducer.Produce(eventMessage);
+                    await eventProducer.ProduceAsync(eventMessage);
                 await Task.Delay(1_000, Cts.Token);
             }
         }

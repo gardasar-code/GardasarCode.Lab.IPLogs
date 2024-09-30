@@ -32,7 +32,7 @@ public class EventConsumer : IEventConsumer
         _kafkaConsumer.Subscribe(options.Value.Topic);
     }
 
-    public async Task Consume(CancellationToken cancellationToken = default)
+    public async Task ConsumeAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -82,7 +82,7 @@ public class EventConsumer : IEventConsumer
         _logger.LogDebug(
             $"Processed Event: UserID: {eventMessage.UserId}, IP: {eventMessage.IpAddress}, Time: {eventMessage.EventTime}");
 
-        await _ipLogsService.AddConnection(eventMessage.UserId, eventMessage.IpAddress, eventMessage.EventTime,
+        await _ipLogsService.AddConnectionAsync(eventMessage.UserId, eventMessage.IpAddress, eventMessage.EventTime,
             cancellationToken);
     }
 }

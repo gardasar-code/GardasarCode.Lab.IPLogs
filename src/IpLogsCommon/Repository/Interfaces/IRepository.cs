@@ -10,7 +10,7 @@ public interface IRepository<out TK> : IDisposable
     Task<T?> FirstOrDefaultAsync<T>(ISpecification<T> spec, CancellationToken cancellationToken = default)
         where T : class;
 
-    ConfiguredCancelableAsyncEnumerable<TResult> AsAsyncEnumerable<T, TResult>(ISpecification<T, TResult> spec,
+    ConfiguredCancelableAsyncEnumerable<TResult> AsAsyncEnumerableStream<T, TResult>(ISpecification<T, TResult> spec,
         CancellationToken cancellationToken = default) where T : class;
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

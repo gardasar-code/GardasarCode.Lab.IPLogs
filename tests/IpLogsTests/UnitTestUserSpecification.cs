@@ -63,7 +63,7 @@ public class UnitTestUserSpecification
         var spec = new UserSpecification.GetUserIpsById(userId, asNoTracking);
 
         var ips = new List<string>();
-        await foreach (var ip in repo.AsAsyncEnumerable(spec)) ips.Add(ip);
+        await foreach (var ip in repo.AsAsyncEnumerableStream(spec)) ips.Add(ip);
 
         // Assert
         Assert.True(spec.AsNoTracking);
@@ -102,7 +102,7 @@ public class UnitTestUserSpecification
         var spec = new UserSpecification.FindUsersByIpPart(ipPart, asNoTracking);
 
         var ids = new List<long>();
-        await foreach (var ip in repo.AsAsyncEnumerable(spec)) ids.Add(ip);
+        await foreach (var ip in repo.AsAsyncEnumerableStream(spec)) ids.Add(ip);
 
         // Assert
         Assert.True(spec.AsNoTracking);

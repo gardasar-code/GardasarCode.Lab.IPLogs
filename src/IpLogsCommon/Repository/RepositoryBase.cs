@@ -39,7 +39,7 @@ public sealed class RepositoryBase<TK>(TK dbContext) : IRepository<TK> where TK 
         return DbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public ConfiguredCancelableAsyncEnumerable<TResult> AsAsyncEnumerable<T, TResult>(ISpecification<T, TResult> spec,
+    public ConfiguredCancelableAsyncEnumerable<TResult> AsAsyncEnumerableStream<T, TResult>(ISpecification<T, TResult> spec,
         CancellationToken cancellationToken = default) where T : class
     {
         var query = SpecificationEvaluator<T, TResult>.GetQuery(DbContext.Set<T>().AsQueryable(), spec);

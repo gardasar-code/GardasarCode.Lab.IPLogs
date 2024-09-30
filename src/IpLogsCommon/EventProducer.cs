@@ -28,7 +28,7 @@ public class EventProducer : IEventProducer
         _kafkaProducer = new ProducerBuilder<Null, string>(config).Build();
     }
 
-    public async Task Produce(EventMessage eventMessage, CancellationToken cancellationToken = default)
+    public async Task ProduceAsync(EventMessage eventMessage, CancellationToken cancellationToken = default)
     {
         if (_kafkaProducer == null)
         {

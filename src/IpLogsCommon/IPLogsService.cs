@@ -23,7 +23,7 @@ public class IPLogsService : IIPLogsService
     }
 
     /// <inheritdoc />
-    public async Task AddConnection(long userId, string ipAddress, DateTime eventTime,
+    public async Task AddConnectionAsync(long userId, string ipAddress, DateTime eventTime,
         CancellationToken cancellationToken = default)
     {
         var newUser = new User
@@ -43,19 +43,19 @@ public class IPLogsService : IIPLogsService
 
         await _repo.SaveChangesAsync(cancellationToken);
 
-        await _cache.RemoveAsync($"{userId}_{nameof(GetLastConnection)}");
-        await _cache.RemoveAsync($"{userId}_{nameof(GetUserIPs)}");
+        await _cache.RemoveAsync($"{userId}_{nameof(GetLastConnectionAsync)}");
+        await _cache.RemoveAsync($"{userId}_{nameof(GetUserIPsStream)}");
 
         _logger?.LogInformation("User connection added/updated successfully for userId: {UserId}", userId);
     }
 
     /// <inheritdoc />
-    public async Task<UserLastConnection> GetLastConnection(long userId,
+    public async Task<UserLastConnection> GetLastConnectionAsync(long userId,
         CancellationToken cancellationToken = default)
     {
-        var cacheKey = $"{userId}_{nameof(GetLastConnection)}";
+        var cacheKey = $"{userId}_{nameof(GetLastConnectionAsync)}";
 
-        var (cached, userLastConnection) = await _cache.TryGetValue<UserLastConnection>(cacheKey);
+        var (cached, userLastConnection) = await _cache.TryGetValueAsync<UserLastConnection>(cacheKey);
         if (cached) return userLastConnection ?? new UserLastConnection();
 
         var user = await _repo.FirstOrDefaultAsync(new UserSpecification.GetUserById(userId, true),
@@ -73,18 +73,18 @@ public class IPLogsService : IIPLogsService
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<string> GetUserIPs(long userId,
+    public async IAsyncEnumerable<string> GetUserIPsStream(long userId,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var cacheKey = $"{userId}_{nameof(GetUserIPs)}";
+        var cacheKey = $"{userId}_{nameof(GetUserIPsStream)}";
 
-        var (cached, cachedIps) = await _cache.TryGetValue<List<string>>(cacheKey);
+        var (cached, cachedIps) = await _cache.TryGetValueAsync<List<string>>(cacheKey);
 
         if (!cached)
         {
             cachedIps = new List<string>();
 
-            await foreach (var ip in _repo.AsAsyncEnumerable(
+            await foreach (var ip in _repo.AsAsyncEnumerableStream(
                                new UserSpecification.GetUserIpsById(userId, true), cancellationToken))
             {
                 cachedIps.Add(ip);
@@ -102,18 +102,18 @@ public class IPLogsService : IIPLogsService
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<long> FindUsersByIpPart(string ipPart,
+    public async IAsyncEnumerable<long> FindUsersByIpPartStream(string ipPart,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var cacheKey = $"{ipPart}_{nameof(FindUsersByIpPart)}";
+        var cacheKey = $"{ipPart}_{nameof(FindUsersByIpPartStream)}";
 
-        var (cached, cachedIps) = await _cache.TryGetValue<List<long>>(cacheKey);
+        var (cached, cachedIps) = await _cache.TryGetValueAsync<List<long>>(cacheKey);
 
         if (!cached)
         {
             cachedIps = new List<long>();
 
-            await foreach (var id in _repo.AsAsyncEnumerable(new UserSpecification.FindUsersByIpPart(ipPart, true),
+            await foreach (var id in _repo.AsAsyncEnumerableStream(new UserSpecification.FindUsersByIpPart(ipPart, true),
                                cancellationToken))
             {
                 cachedIps.Add(id);

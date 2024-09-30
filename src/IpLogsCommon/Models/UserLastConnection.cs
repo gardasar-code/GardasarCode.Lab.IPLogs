@@ -9,6 +9,6 @@ public class UserLastConnection
     // ReSharper disable once InconsistentNaming
     public string? IPAddress { get; set; } = string.Empty;
 
-    [JsonPropertyName("last_connection-time")]
+    [JsonPropertyName("last_connection_time")]
     public DateTime? LastConnectionTime { get; set; }
 }

@@ -4,5 +4,5 @@ namespace IpLogsCommon.Interfaces;
 
 public interface IEventProducer : IDisposable
 {
-    Task Produce(EventMessage eventMessage, CancellationToken cancellationToken = default);
+    Task ProduceAsync(EventMessage eventMessage, CancellationToken cancellationToken = default);
 }

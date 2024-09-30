@@ -47,7 +47,7 @@ public class RedisCache : ICache
         }
     }
 
-    public async Task<(bool, T?)> TryGetValue<T>(string key)
+    public async Task<(bool, T?)> TryGetValueAsync<T>(string key)
     {
         try
         {

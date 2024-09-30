@@ -42,7 +42,7 @@ public class EventConsumer : IEventConsumer
             _logger.LogDebug($"Received message: {consumeResult.Message.Value}");
             var eventMessage = JsonSerializer.Deserialize<EventMessage>(consumeResult.Message.Value);
             if (eventMessage != null)
-                await ProcessEvent(eventMessage, cancellationToken);
+                await ProcessEventAsync(eventMessage, cancellationToken);
         }
         catch (JsonException e)
         {
@@ -77,7 +77,7 @@ public class EventConsumer : IEventConsumer
         _disposed = true;
     }
 
-    private async Task ProcessEvent(EventMessage eventMessage, CancellationToken cancellationToken = default)
+    private async Task ProcessEventAsync(EventMessage eventMessage, CancellationToken cancellationToken = default)
     {
         _logger.LogDebug(
             $"Processed Event: UserID: {eventMessage.UserId}, IP: {eventMessage.IpAddress}, Time: {eventMessage.EventTime}");

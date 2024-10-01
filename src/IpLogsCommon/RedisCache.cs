@@ -7,13 +7,12 @@ using StackExchange.Redis;
 
 namespace IpLogsCommon;
 
-public class RedisCache : ICache
+public sealed class RedisCache : ICache
 {
     private readonly IDatabase _database;
     private readonly ILogger<RedisCache>? _logger;
     private readonly IOptionsSnapshot<RedisOptions> _options;
-    private readonly ConnectionMultiplexer redis;
-    private bool _disposed;
+    private readonly ConnectionMultiplexer _redis;
 
     public RedisCache(IOptionsSnapshot<RedisOptions> options,
         ILoggerFactory loggerFactory)
@@ -22,8 +21,8 @@ public class RedisCache : ICache
         _logger = loggerFactory.CreateLogger<RedisCache>();
         try
         {
-            redis = ConnectionMultiplexer.Connect(options.Value.Connection!);
-            _database = redis.GetDatabase();
+            _redis = ConnectionMultiplexer.Connect(options.Value.Connection!);
+            _database = _redis.GetDatabase();
         }
         catch (Exception ex)
         {
@@ -53,13 +52,9 @@ public class RedisCache : ICache
         {
             var cachedValue = await _database.StringGetAsync(key);
 
-            if (cachedValue is { HasValue: true, IsNullOrEmpty: false })
-            {
-                _logger?.LogInformation("Get value from cache for key: {Key}", key);
-                return (true, JsonSerializer.Deserialize<T>(cachedValue!));
-            }
-
-            return (false, default);
+            if (cachedValue is not { HasValue: true, IsNullOrEmpty: false }) return (false, default);
+            _logger?.LogInformation("Get value from cache for key: {Key}", key);
+            return (true, JsonSerializer.Deserialize<T>(cachedValue!));
         }
         catch (Exception ex)
         {
@@ -82,16 +77,27 @@ public class RedisCache : ICache
         }
     }
 
+    #region Dispose
+
+    private bool _disposed;
+
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (_disposed) return;
-        if (disposing) redis.Dispose();
+        if (disposing) _redis.Dispose();
         _disposed = true;
     }
+
+    ~RedisCache()
+    {
+        Dispose(false);
+    }
+
+    #endregion
 }

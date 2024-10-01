@@ -34,7 +34,7 @@ public class Program
                 options.UseNpgsql(builder.Configuration.GetConnectionString("db"));
                 options.EnableSensitiveDataLogging();
             });
-            builder.Services.AddTransient<IRepository<DbContext>, RepositoryBase<IpLogsDbContext>>();
+            builder.Services.AddTransient<IRepository, RepositoryBase<IpLogsDbContext>>();
             builder.Services.AddTransient<IIPLogsService, IPLogsService>();
             builder.Services.AddTransient<ICache, RedisCache>();
 

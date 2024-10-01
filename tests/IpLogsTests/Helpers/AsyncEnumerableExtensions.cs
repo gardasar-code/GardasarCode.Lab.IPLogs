@@ -15,7 +15,7 @@ public static class AsyncEnumerableExtensions
         foreach (var item in source)
         {
             yield return item;
-            await Task.Yield(); // Обеспечивает асинхронность
+            await Task.Yield();
         }
     }
 }

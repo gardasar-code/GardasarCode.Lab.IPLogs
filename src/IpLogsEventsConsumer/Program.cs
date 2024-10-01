@@ -41,7 +41,7 @@ public class Program
                 options.UseNpgsql(configuration.GetConnectionString("db"));
                 options.EnableSensitiveDataLogging();
             });
-            services.AddTransient<IRepository<DbContext>, RepositoryBase<IpLogsDbContext>>();
+            services.AddTransient<IRepository, RepositoryBase<IpLogsDbContext>>();
 
             services.AddTransient<IIPLogsService, IPLogsService>();
             services.AddTransient<IEventConsumer, EventConsumer>();
@@ -78,7 +78,6 @@ public class Program
             var eventConsumer = _serviceProvider.GetService<IEventConsumer>();
 
             while (!Cts.Token.IsCancellationRequested)
-            {
                 try
                 {
                     if (eventConsumer != null)
@@ -89,7 +88,6 @@ public class Program
                 {
                     logger?.LogError(e, "Error occurred while consuming events.");
                 }
-            }
         }
         finally
         {

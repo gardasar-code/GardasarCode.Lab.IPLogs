@@ -2,6 +2,6 @@ namespace IpLogsCommon.Models.Options;
 
 public class RedisOptions
 {
-    public string? Connection { get; set; }
-    public int Expiration { get; set; } = 5;
+    public string? Connection { get; init; }
+    public int Expiration { get; init; } = 5;
 }

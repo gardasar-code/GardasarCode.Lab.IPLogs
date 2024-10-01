@@ -4,7 +4,6 @@ public class User
 {
     public long Id { get; init; }
 
-    // ReSharper disable once InconsistentNaming
     public string IPAddress { get; init; } = string.Empty;
     public DateTime LastConnectionTime { get; init; }
 

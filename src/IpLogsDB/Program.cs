@@ -15,7 +15,7 @@ public class Program
 {
     private static IServiceProvider? _serviceProvider;
     private static readonly CancellationTokenSource Cts = new();
-    
+
     private static async Task Main()
     {
         try
@@ -33,7 +33,7 @@ public class Program
                 options.UseNpgsql(configuration.GetConnectionString("db"));
                 options.EnableSensitiveDataLogging();
             });
-            
+
 #pragma warning disable ASP0000
             _serviceProvider = services.BuildServiceProvider();
 #pragma warning restore ASP0000
@@ -41,7 +41,7 @@ public class Program
             #endregion
 
             var logger = _serviceProvider.GetService<ILoggerFactory>()?.CreateLogger(nameof(IpLogsDB));
-            
+
             #region terminate
 
             Console.CancelKeyPress += (_, e) =>
@@ -61,10 +61,10 @@ public class Program
             #endregion
 
             logger?.LogInformation("Application started. Press CTRL+C to terminate.");
-            
+
             var context = _serviceProvider.GetService<IpLogsDbContext>();
-            
-            if(context != null) 
+
+            if (context != null)
                 await context.Database.MigrateAsync(Cts.Token);
         }
         finally

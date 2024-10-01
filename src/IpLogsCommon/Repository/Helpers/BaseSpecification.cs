@@ -8,7 +8,7 @@ public abstract class BaseSpecification<T> : ISpecification<T>
     public IEnumerable<Expression<Func<T, bool>>> Criterias { get; } = new List<Expression<Func<T, bool>>>();
     public bool AsNoTracking { get; protected init; }
 
-    protected virtual void AddCriteria(Expression<Func<T, bool>> criteria)
+    protected void AddCriteria(Expression<Func<T, bool>> criteria)
     {
         ((List<Expression<Func<T, bool>>>)Criterias).Add(criteria);
     }

@@ -5,16 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace IpLogsCommon.Repository;
 
-public sealed class RepositoryBase<TK>(TK dbContext) : IRepository<TK> where TK : DbContext
+public sealed class RepositoryBase<TK>(TK dbContext) : IRepository where TK : DbContext
 {
-    private bool _disposed;
     private DbContext DbContext { get; } = dbContext;
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
 
     public async Task<T> AddAsync<T>(T entity, CancellationToken cancellationToken = default) where T : class
     {
@@ -22,7 +15,7 @@ public sealed class RepositoryBase<TK>(TK dbContext) : IRepository<TK> where TK 
         return entity;
     }
 
-    public void SetValues<T>(T entity, T newEntity, CancellationToken cancellationToken = default)
+    public void SetValues<T>(T entity, T newEntity)
         where T : class
     {
         DbContext.Entry(entity).CurrentValues.SetValues(newEntity);
@@ -39,11 +32,32 @@ public sealed class RepositoryBase<TK>(TK dbContext) : IRepository<TK> where TK 
         return DbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public ConfiguredCancelableAsyncEnumerable<TResult> AsAsyncEnumerableStream<T, TResult>(ISpecification<T, TResult> spec,
+    public ConfiguredCancelableAsyncEnumerable<TResult> AsAsyncEnumerableStream<T, TResult>(
+        ISpecification<T, TResult> spec,
         CancellationToken cancellationToken = default) where T : class
     {
         var query = SpecificationEvaluator<T, TResult>.GetQuery(DbContext.Set<T>().AsQueryable(), spec);
         return query.AsAsyncEnumerable().WithCancellation(cancellationToken);
+    }
+
+    private IQueryable<T> ApplySpecification<T>(ISpecification<T> spec) where T : class
+    {
+        return SpecificationEvaluator<T>.GetQuery(DbContext.Set<T>().AsQueryable(), spec);
+    }
+
+    #region Dispose
+
+    private bool _disposed;
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    ~RepositoryBase()
+    {
+        Dispose(false);
     }
 
     private void Dispose(bool disposing)
@@ -53,8 +67,5 @@ public sealed class RepositoryBase<TK>(TK dbContext) : IRepository<TK> where TK 
         _disposed = true;
     }
 
-    private IQueryable<T> ApplySpecification<T>(ISpecification<T> spec) where T : class
-    {
-        return SpecificationEvaluator<T>.GetQuery(DbContext.Set<T>().AsQueryable(), spec);
-    }
+    #endregion
 }

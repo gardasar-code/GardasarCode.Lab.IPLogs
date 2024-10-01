@@ -1,7 +1,6 @@
 using IpLogsCommon.Repository;
 using IpLogsCommon.Repository.Context;
 using IpLogsCommon.Repository.Entities;
-using IpLogsCommon.Repository.Interfaces;
 using IpLogsCommon.Repository.Specifications;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,7 +20,7 @@ public class UnitTestUserSpecification
         const long userId = 1L;
 
         await using var context = new IpLogsDbContext(options);
-        using IRepository<DbContext> repo = new RepositoryBase<IpLogsDbContext>(context);
+        using var repo = new RepositoryBase<IpLogsDbContext>(context);
 
         context.Users.Add(new User { Id = 1L });
         context.Users.Add(new User { Id = 2L });
@@ -50,7 +49,7 @@ public class UnitTestUserSpecification
         const long userId = 1L;
 
         await using var context = new IpLogsDbContext(options);
-        using IRepository<DbContext> repo = new RepositoryBase<IpLogsDbContext>(context);
+        using var repo = new RepositoryBase<IpLogsDbContext>(context);
 
         context.UserIPs.Add(new UserIP { UserId = 1L, IPAddress = "127.0.0.1", ConnectionTime = DateTime.Now });
         context.UserIPs.Add(new UserIP { UserId = 1L, IPAddress = "127.0.0.1", ConnectionTime = DateTime.Now });
@@ -88,7 +87,7 @@ public class UnitTestUserSpecification
         List<long> waitedIds = [1, 2, 3];
 
         await using var context = new IpLogsDbContext(options);
-        using IRepository<DbContext> repo = new RepositoryBase<IpLogsDbContext>(context);
+        using var repo = new RepositoryBase<IpLogsDbContext>(context);
 
         context.UserIPs.Add(new UserIP { UserId = 1L, IPAddress = "127.0.0.1", ConnectionTime = DateTime.Now });
         context.UserIPs.Add(new UserIP { UserId = 1L, IPAddress = "127.0.0.1", ConnectionTime = DateTime.Now });
@@ -125,7 +124,7 @@ public class UnitTestUserSpecification
         var user = new User { Id = 10, IPAddress = "127.0.0.1", LastConnectionTime = DateTime.Now };
 
         await using var context = new IpLogsDbContext(options);
-        using IRepository<DbContext> repo = new RepositoryBase<IpLogsDbContext>(context);
+        using var repo = new RepositoryBase<IpLogsDbContext>(context);
 
         // Act
         _ = await repo.AddAsync(user);

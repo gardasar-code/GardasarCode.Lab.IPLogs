@@ -22,3 +22,7 @@ include:
   - name: CA1822
   - name: InvertIf
   - name: MemberCanBeMadeStatic.Local
+exclude:
+  - name: All
+    paths:
+      - src/IpLogsCommon/Repository/Context/Migrations/IpLogsDb/20240927103847_Initial.cs

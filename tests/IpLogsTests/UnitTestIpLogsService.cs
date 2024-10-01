@@ -5,7 +5,6 @@ using IpLogsCommon.Repository.Entities;
 using IpLogsCommon.Repository.Interfaces;
 using IpLogsCommon.Repository.Specifications;
 using IpLogsTests.Helpers;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -19,7 +18,7 @@ public class UnitTestIpLogsService
     public async Task AddConnection_Should_AddNewUser_When_UserDoesNotExist()
     {
         // Arrange
-        var mockRepo = new Mock<IRepository<DbContext>>();
+        var mockRepo = new Mock<IRepository>();
         var mockCache = new Mock<ICache>();
 
         var mockLogger = new Mock<ILogger<IPLogsService>>();
@@ -45,7 +44,7 @@ public class UnitTestIpLogsService
     public async Task AddConnection_Should_UpdateUser_When_UserExists()
     {
         // Arrange
-        var mockRepo = new Mock<IRepository<DbContext>>();
+        var mockRepo = new Mock<IRepository>();
         var mockCache = new Mock<ICache>();
 
         var mockLogger = new Mock<ILogger<IPLogsService>>();
@@ -63,7 +62,7 @@ public class UnitTestIpLogsService
         await service.AddConnectionAsync(1, "192.168.0.1", DateTime.UtcNow);
 
         // Assert
-        mockRepo.Verify(r => r.SetValues(existingUser, It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Once);
+        mockRepo.Verify(r => r.SetValues(existingUser, It.IsAny<User>()), Times.Once);
         mockRepo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         mockCache.Verify(c => c.RemoveAsync(It.IsAny<string>()), Times.Exactly(2));
     }
@@ -76,7 +75,7 @@ public class UnitTestIpLogsService
     public async Task GetLastConnection_Should_ReturnUserLastConnection_When_DB_IsAvailable()
     {
         // Arrange
-        var mockRepo = new Mock<IRepository<DbContext>>();
+        var mockRepo = new Mock<IRepository>();
         var mockCache = new Mock<ICache>();
 
         var mockLogger = new Mock<ILogger<IPLogsService>>();
@@ -109,7 +108,7 @@ public class UnitTestIpLogsService
     public async Task GetLastConnection_Should_ReturnUserLastConnection_When_Cache_IsAvailable()
     {
         // Arrange
-        var mockRepo = new Mock<IRepository<DbContext>>();
+        var mockRepo = new Mock<IRepository>();
         var mockCache = new Mock<ICache>();
 
         var mockLogger = new Mock<ILogger<IPLogsService>>();
@@ -142,7 +141,7 @@ public class UnitTestIpLogsService
     public async Task GetLastConnection_Should_ReturnUserLastConnection_When_Cache_IsNullAvailable()
     {
         // Arrange
-        var mockRepo = new Mock<IRepository<DbContext>>();
+        var mockRepo = new Mock<IRepository>();
         var mockCache = new Mock<ICache>();
 
         var mockLogger = new Mock<ILogger<IPLogsService>>();
@@ -173,7 +172,7 @@ public class UnitTestIpLogsService
     public async Task GetLastConnection_Should_ReturnUserLastConnectionWithEmpty_When_NoAvailable()
     {
         // Arrange
-        var mockRepo = new Mock<IRepository<DbContext>>();
+        var mockRepo = new Mock<IRepository>();
         var mockCache = new Mock<ICache>();
 
         var mockLogger = new Mock<ILogger<IPLogsService>>();
@@ -208,7 +207,7 @@ public class UnitTestIpLogsService
     public async Task GetUserIPs_Should_ReturnIPsFromCache_When_DB_IsAvailable()
     {
         // Arrange
-        var mockRepo = new Mock<IRepository<DbContext>>();
+        var mockRepo = new Mock<IRepository>();
         var mockCache = new Mock<ICache>();
 
         var mockLogger = new Mock<ILogger<IPLogsService>>();
@@ -225,8 +224,7 @@ public class UnitTestIpLogsService
         var service = new IPLogsService(mockRepo.Object, mockCache.Object, mockLoggerFactory.Object);
 
         // Act
-        var ips = new List<string>();
-        await foreach (var ip in service.GetUserIPsStream(1)) ips.Add(ip);
+        var ips = await service.GetUserIPsStream(1).ToListAsync();
 
         // Assert
         Assert.Equal(dbIps, ips);
@@ -241,7 +239,7 @@ public class UnitTestIpLogsService
     public async Task GetUserIPs_Should_ReturnIPsFromCache_When_Cache_IsAvailable()
     {
         // Arrange
-        var mockRepo = new Mock<IRepository<DbContext>>();
+        var mockRepo = new Mock<IRepository>();
         var mockCache = new Mock<ICache>();
 
         var mockLogger = new Mock<ILogger<IPLogsService>>();
@@ -255,8 +253,7 @@ public class UnitTestIpLogsService
         var service = new IPLogsService(mockRepo.Object, mockCache.Object, mockLoggerFactory.Object);
 
         // Act
-        var ips = new List<string>();
-        await foreach (var ip in service.GetUserIPsStream(1)) ips.Add(ip);
+        var ips = await service.GetUserIPsStream(1).ToListAsync();
 
         // Assert
         Assert.Equal(cachedIps, ips);
@@ -271,7 +268,7 @@ public class UnitTestIpLogsService
     public async Task GetUserIPs_Should_ReturnIPsFromCache_When_Cache_IsNullAvailable()
     {
         // Arrange
-        var mockRepo = new Mock<IRepository<DbContext>>();
+        var mockRepo = new Mock<IRepository>();
         var mockCache = new Mock<ICache>();
 
         var mockLogger = new Mock<ILogger<IPLogsService>>();
@@ -282,8 +279,7 @@ public class UnitTestIpLogsService
         var service = new IPLogsService(mockRepo.Object, mockCache.Object, mockLoggerFactory.Object);
 
         // Act
-        var ips = new List<string>();
-        await foreach (var ip in service.GetUserIPsStream(1)) ips.Add(ip);
+        var ips = await service.GetUserIPsStream(1).ToListAsync();
 
         // Assert
         Assert.Empty(ips);
@@ -298,7 +294,7 @@ public class UnitTestIpLogsService
     public async Task GetUserIPs_Should_ReturnIPsFromCache_When_NoAvailable()
     {
         // Arrange
-        var mockRepo = new Mock<IRepository<DbContext>>();
+        var mockRepo = new Mock<IRepository>();
         var mockCache = new Mock<ICache>();
 
         var mockLogger = new Mock<ILogger<IPLogsService>>();
@@ -313,8 +309,7 @@ public class UnitTestIpLogsService
         var service = new IPLogsService(mockRepo.Object, mockCache.Object, mockLoggerFactory.Object);
 
         // Act
-        var ips = new List<string>();
-        await foreach (var ip in service.GetUserIPsStream(1)) ips.Add(ip);
+        var ips = await service.GetUserIPsStream(1).ToListAsync();
 
         // Assert
         Assert.Empty(ips);
@@ -333,7 +328,7 @@ public class UnitTestIpLogsService
     public async Task FindUsersByIpPart_Should_ReturnUsersFromCache_When_DB_IsAvailable()
     {
         // Arrange
-        var mockRepo = new Mock<IRepository<DbContext>>();
+        var mockRepo = new Mock<IRepository>();
         var mockCache = new Mock<ICache>();
 
         var mockLogger = new Mock<ILogger<IPLogsService>>();
@@ -351,8 +346,7 @@ public class UnitTestIpLogsService
 
 
         // Act
-        var ids = new List<long>();
-        await foreach (var id in service.FindUsersByIpPartStream("127.0.")) ids.Add(id);
+        var ids = await service.FindUsersByIpPartStream("127.0.").ToListAsync();
 
         // Assert
         Assert.Equal(dbIds, ids);
@@ -367,7 +361,7 @@ public class UnitTestIpLogsService
     public async Task FindUsersByIpPart_Should_ReturnUsersFromCache_When_Cache_IsAvailable()
     {
         // Arrange
-        var mockRepo = new Mock<IRepository<DbContext>>();
+        var mockRepo = new Mock<IRepository>();
         var mockCache = new Mock<ICache>();
 
         var mockLogger = new Mock<ILogger<IPLogsService>>();
@@ -381,8 +375,7 @@ public class UnitTestIpLogsService
         var service = new IPLogsService(mockRepo.Object, mockCache.Object, mockLoggerFactory.Object);
 
         // Act
-        var ids = new List<long>();
-        await foreach (var id in service.FindUsersByIpPartStream("127.0.")) ids.Add(id);
+        var ids = await service.FindUsersByIpPartStream("127.0.").ToListAsync();
 
         // Assert
         Assert.Equal(cachedIds, ids);
@@ -397,7 +390,7 @@ public class UnitTestIpLogsService
     public async Task FindUsersByIpPart_Should_ReturnUsersFromCache_When_Cache_IsNullAvailable()
     {
         // Arrange
-        var mockRepo = new Mock<IRepository<DbContext>>();
+        var mockRepo = new Mock<IRepository>();
         var mockCache = new Mock<ICache>();
 
         var mockLogger = new Mock<ILogger<IPLogsService>>();
@@ -409,8 +402,7 @@ public class UnitTestIpLogsService
         var service = new IPLogsService(mockRepo.Object, mockCache.Object, mockLoggerFactory.Object);
 
         // Act
-        var ids = new List<long>();
-        await foreach (var id in service.FindUsersByIpPartStream("127.0.")) ids.Add(id);
+        var ids = await service.FindUsersByIpPartStream("127.0.").ToListAsync();
 
         // Assert
         Assert.Empty(ids);
@@ -425,7 +417,7 @@ public class UnitTestIpLogsService
     public async Task FindUsersByIpPart_Should_ReturnUsersFromCache_When_NoAvailable()
     {
         // Arrange
-        var mockRepo = new Mock<IRepository<DbContext>>();
+        var mockRepo = new Mock<IRepository>();
         var mockCache = new Mock<ICache>();
 
         var mockLogger = new Mock<ILogger<IPLogsService>>();
@@ -440,8 +432,7 @@ public class UnitTestIpLogsService
         var service = new IPLogsService(mockRepo.Object, mockCache.Object, mockLoggerFactory.Object);
 
         // Act
-        var ids = new List<long>();
-        await foreach (var id in service.FindUsersByIpPartStream("127.0.")) ids.Add(id);
+        var ids = await service.FindUsersByIpPartStream("127.0.").ToListAsync();
 
         // Assert
         Assert.Empty(ids);

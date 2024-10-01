@@ -8,12 +8,11 @@ using Microsoft.Extensions.Options;
 
 namespace IpLogsCommon;
 
-public class EventProducer : IEventProducer
+public sealed class EventProducer : IEventProducer
 {
-    private readonly IProducer<Null, string>? _kafkaProducer;
+    private readonly IProducer<Null, string> _kafkaProducer;
     private readonly ILogger<EventProducer> _logger;
     private readonly IOptionsSnapshot<KafkaOptions> _options;
-    private bool _disposed;
 
     public EventProducer(IOptionsSnapshot<KafkaOptions> options, ILoggerFactory loggerFactory)
     {
@@ -30,26 +29,25 @@ public class EventProducer : IEventProducer
 
     public async Task ProduceAsync(EventMessage eventMessage, CancellationToken cancellationToken = default)
     {
-        if (_kafkaProducer == null)
-        {
-            _logger.LogError("Kafka producer is not initialized.");
-            return;
-        }
-
         try
         {
-            var report = await _kafkaProducer?.ProduceAsync(_options.Value.Topic,
+            var report = await _kafkaProducer.ProduceAsync(_options.Value.Topic,
                 new Message<Null, string> { Value = JsonSerializer.Serialize(eventMessage) }, cancellationToken)!;
 
             _logger.LogDebug(
-                $"Processed Event: UserID: {eventMessage.UserId}, IP: {eventMessage.IpAddress}, Time: {eventMessage.EventTime}, Message sent to topic: {report.TopicPartitionOffset}");
+                "Processed Event: UserID: {UserId}, IP: {IpAddress}, Time: {EventTime}, Message sent to topic: {TopicPartitionOffset}",
+                eventMessage.UserId, eventMessage.IpAddress, eventMessage.EventTime, report.TopicPartitionOffset);
         }
         catch (ProduceException<Null, string> e)
         {
             if (e.Error.IsError)
-                _logger.LogError($"Error sending message: {e.Error.Reason}");
+                _logger.LogError("Error sending message: {ereason}", e.Error.Reason);
         }
     }
+
+    #region Dispose
+
+    private bool _disposed;
 
     public void Dispose()
     {
@@ -57,10 +55,17 @@ public class EventProducer : IEventProducer
         GC.SuppressFinalize(this);
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (_disposed) return;
-        if (disposing) _kafkaProducer?.Dispose();
+        if (disposing) _kafkaProducer.Dispose();
         _disposed = true;
     }
+
+    ~EventProducer()
+    {
+        Dispose(false);
+    }
+
+    #endregion
 }

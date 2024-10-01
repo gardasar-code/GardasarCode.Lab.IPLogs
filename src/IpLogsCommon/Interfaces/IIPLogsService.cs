@@ -31,7 +31,6 @@ public interface IIPLogsService
     /// <returns></returns>
     public IAsyncEnumerable<string> GetUserIPsStream(long userId, CancellationToken cancellationToken);
 
-    // Поиск пользователей по части IP адреса
     /// <summary>
     ///     Поиск пользователей по части IP адреса
     /// </summary>

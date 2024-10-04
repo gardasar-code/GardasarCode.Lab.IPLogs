@@ -10,6 +10,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.env = .env
 		README.md = README.md
 		.gitignore = .gitignore
+		.github\workflows\build.yml = .github\workflows\build.yml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IpLogsCommon", "src\IpLogsCommon\IpLogsCommon.csproj", "{A8004D3E-C9A5-4F16-8B80-A4F6A9E285E4}"

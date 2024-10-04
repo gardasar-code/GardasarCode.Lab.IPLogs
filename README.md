@@ -1,3 +1,7 @@
+
+
+[![build](https://github.com/gardasar-code/lab-iplogs/actions/workflows/build.yml/badge.svg)](https://github.com/gardasar-code/lab-iplogs/actions/workflows/build.yml)
+
 # Задача
 
 Сервис для работы с пользователями и их IP адресов.

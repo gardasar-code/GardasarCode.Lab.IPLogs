@@ -65,11 +65,12 @@ public class Program
             var context = _serviceProvider.GetService<IpLogsDbContext>();
 
             if (context != null)
-                await context.Database.MigrateAsync(Cts.Token);
+                await context.Database.MigrateAsync(Cts.Token).ConfigureAwait(false);
         }
         finally
         {
-            await Log.CloseAndFlushAsync();
+            Cts.Dispose();
+            await Log.CloseAndFlushAsync().ConfigureAwait(false);
         }
     }
 }

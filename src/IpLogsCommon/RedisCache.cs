@@ -36,7 +36,8 @@ public sealed class RedisCache : ICache
         try
         {
             var serializedValue = JsonSerializer.Serialize(value);
-            await _database.StringSetAsync(key, serializedValue, TimeSpan.FromSeconds(_options.Value.Expiration));
+            await _database.StringSetAsync(key, serializedValue, TimeSpan.FromSeconds(_options.Value.Expiration))
+                .ConfigureAwait(false);
             _logger?.LogInformation("Set value cache for key: {Key}", key);
         }
         catch (Exception ex)
@@ -50,7 +51,7 @@ public sealed class RedisCache : ICache
     {
         try
         {
-            var cachedValue = await _database.StringGetAsync(key);
+            var cachedValue = await _database.StringGetAsync(key).ConfigureAwait(false);
 
             if (cachedValue is not { HasValue: true, IsNullOrEmpty: false }) return (false, default);
             _logger?.LogInformation("Get value from cache for key: {Key}", key);
@@ -67,7 +68,7 @@ public sealed class RedisCache : ICache
     {
         try
         {
-            await _database.KeyDeleteAsync(key);
+            await _database.KeyDeleteAsync(key).ConfigureAwait(false);
             _logger?.LogInformation("Remove value from cache for key: {Key}", key);
         }
         catch (Exception ex)
@@ -87,11 +88,34 @@ public sealed class RedisCache : ICache
         GC.SuppressFinalize(this);
     }
 
+    public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore(true).ConfigureAwait(false);
+        GC.SuppressFinalize(this);
+    }
+
     private void Dispose(bool disposing)
     {
         if (_disposed) return;
+
+        ReleaseUnmanagedResources();
         if (disposing) _redis.Dispose();
+
         _disposed = true;
+    }
+
+    private async ValueTask DisposeAsyncCore(bool disposing)
+    {
+        if (_disposed) return;
+
+        ReleaseUnmanagedResources();
+        if (disposing) await _redis.DisposeAsync().ConfigureAwait(false);
+
+        _disposed = true;
+    }
+
+    private void ReleaseUnmanagedResources()
+    {
     }
 
     ~RedisCache()

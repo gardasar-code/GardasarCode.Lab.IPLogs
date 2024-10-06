@@ -1,8 +1,8 @@
+using GardasarCode.Repository.Interfaces;
 using IpLogsCommon;
 using IpLogsCommon.Interfaces;
 using IpLogsCommon.Models;
 using IpLogsCommon.Repository.Entities;
-using IpLogsCommon.Repository.Interfaces;
 using IpLogsCommon.Repository.Specifications;
 using IpLogsTests.Helpers;
 using Microsoft.Extensions.Logging;
@@ -25,14 +25,14 @@ public class UnitTestIpLogsService
         var mockLoggerFactory = new Mock<ILoggerFactory>();
         mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(() => mockLogger.Object);
 
-        mockRepo.Setup(r =>
+        mockRepo.Setup<Task<User?>>(r =>
                 r.FirstOrDefaultAsync(It.IsAny<UserSpecification.GetUserById>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
 
         var service = new IPLogsService(mockRepo.Object, mockCache.Object, mockLoggerFactory.Object);
 
         // Act
-        await service.AddConnectionAsync(1, "127.0.0.1", DateTime.UtcNow);
+        await service.AddConnectionAsync(1, "127.0.0.1", DateTime.UtcNow).ConfigureAwait(true);
 
         // Assert
         mockRepo.Verify(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Once);

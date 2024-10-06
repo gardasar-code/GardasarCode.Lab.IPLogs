@@ -1,10 +1,10 @@
 using System.Threading.Tasks;
+using GardasarCode.Repository;
+using GardasarCode.Repository.Interfaces;
 using IpLogsCommon;
 using IpLogsCommon.Interfaces;
 using IpLogsCommon.Models.Options;
-using IpLogsCommon.Repository;
 using IpLogsCommon.Repository.Context;
-using IpLogsCommon.Repository.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -25,8 +25,7 @@ public class Program
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddProblemDetails();
-
-
+            
             builder.Services.Configure<RedisOptions>(builder.Configuration.GetSection("REDIS"));
 
             builder.Services.AddDbContext<IpLogsDbContext>(options =>
@@ -53,14 +52,15 @@ public class Program
             app.MapFallback(async Task (context) =>
             {
                 context.Response.StatusCode = StatusCodes.Status404NotFound;
-                await context.Response.WriteAsync("The endpoint you are looking for does not exist!");
+                await context.Response.WriteAsync("The endpoint you are looking for does not exist!")
+                    .ConfigureAwait(false);
             });
 
-            await app.RunAsync();
+            await app.RunAsync().ConfigureAwait(false);
         }
         finally
         {
-            await Log.CloseAndFlushAsync();
+            await Log.CloseAndFlushAsync().ConfigureAwait(false);
         }
     }
 }

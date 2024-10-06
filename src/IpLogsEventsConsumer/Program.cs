@@ -2,12 +2,12 @@
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using GardasarCode.Repository;
+using GardasarCode.Repository.Interfaces;
 using IpLogsCommon;
 using IpLogsCommon.Interfaces;
 using IpLogsCommon.Models.Options;
-using IpLogsCommon.Repository;
 using IpLogsCommon.Repository.Context;
-using IpLogsCommon.Repository.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -81,7 +81,7 @@ public class Program
                 try
                 {
                     if (eventConsumer != null)
-                        await eventConsumer.ConsumeAsync(Cts.Token);
+                        await eventConsumer.ConsumeAsync(Cts.Token).ConfigureAwait(false);
                     await Task.Delay(1_000, Cts.Token);
                 }
                 catch (Exception e)
@@ -91,7 +91,8 @@ public class Program
         }
         finally
         {
-            await Log.CloseAndFlushAsync();
+            Cts.Dispose();
+            await Log.CloseAndFlushAsync().ConfigureAwait(false);
         }
     }
 }

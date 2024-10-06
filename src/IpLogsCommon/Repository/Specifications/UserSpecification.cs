@@ -1,5 +1,5 @@
+using GardasarCode.Repository.Helpers;
 using IpLogsCommon.Repository.Entities;
-using IpLogsCommon.Repository.Helpers;
 
 namespace IpLogsCommon.Repository.Specifications;
 

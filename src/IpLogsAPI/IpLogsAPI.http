@@ -1,6 +1,6 @@
 @IpLogsAPI_HostAddress = http://localhost:8080
 @userId = 10
-@usearchIp = 192.168
+@usearchIp = 1
 
 GET {{IpLogsAPI_HostAddress}}/user/{{userId}}/last-connection
 Accept: application/json

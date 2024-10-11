@@ -60,6 +60,7 @@ public class Program
         }
         finally
         {
+            IPLogsService.DisposeSemaphores();
             await Log.CloseAndFlushAsync().ConfigureAwait(false);
         }
     }

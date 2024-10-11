@@ -98,7 +98,7 @@ public class UnitTestIpLogsService
         Assert.Equal(dbuser.LastConnectionTime, result.LastConnectionTime);
         Assert.Equal(dbuser.IPAddress, result.IPAddress);
 
-        mockCache.Verify(c => c.TryGetValueAsync<UserLastConnection>(It.IsAny<string>()), Times.Once);
+        mockCache.Verify(c => c.TryGetValueAsync<UserLastConnection>(It.IsAny<string>()), Times.Exactly(2));
         mockRepo.Verify(c => c.FirstOrDefaultAsync(It.IsAny<ISpecification<User>>(), It.IsAny<CancellationToken>()),
             Times.Once);
         mockCache.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<UserLastConnection>()), Times.Once);
@@ -166,8 +166,7 @@ public class UnitTestIpLogsService
             Times.Never);
         mockCache.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<UserLastConnection>()), Times.Never);
     }
-
-
+    
     [Fact]
     public async Task GetLastConnection_Should_ReturnUserLastConnectionWithEmpty_When_NoAvailable()
     {
@@ -193,7 +192,7 @@ public class UnitTestIpLogsService
         Assert.Null(result.LastConnectionTime);
         Assert.Null(result.IPAddress);
 
-        mockCache.Verify(c => c.TryGetValueAsync<UserLastConnection>(It.IsAny<string>()), Times.Once);
+        mockCache.Verify(c => c.TryGetValueAsync<UserLastConnection>(It.IsAny<string>()), Times.Exactly(2));
         mockRepo.Verify(c => c.FirstOrDefaultAsync(It.IsAny<ISpecification<User>>(), It.IsAny<CancellationToken>()),
             Times.Once);
         mockCache.Verify(c => c.SetAsync(It.IsAny<string>(), It.IsAny<UserLastConnection>()), Times.Once);
@@ -228,7 +227,7 @@ public class UnitTestIpLogsService
 
         // Assert
         Assert.Equal(dbIps, ips);
-        mockCache.Verify(c => c.TryGetValueAsync<List<string>>(It.IsAny<string>()), Times.Once);
+        mockCache.Verify(c => c.TryGetValueAsync<List<string>>(It.IsAny<string>()), Times.Exactly(2));
         mockRepo.Verify(
             r => r.AsAsyncEnumerableStream(It.IsAny<ISpecification<UserIP, string>>(), It.IsAny<CancellationToken>()),
             Times.Once);
@@ -313,7 +312,7 @@ public class UnitTestIpLogsService
 
         // Assert
         Assert.Empty(ips);
-        mockCache.Verify(c => c.TryGetValueAsync<List<string>>(It.IsAny<string>()), Times.Once);
+        mockCache.Verify(c => c.TryGetValueAsync<List<string>>(It.IsAny<string>()), Times.Exactly(2));
         mockRepo.Verify(
             r => r.AsAsyncEnumerableStream(It.IsAny<ISpecification<UserIP, string>>(), It.IsAny<CancellationToken>()),
             Times.Once);
@@ -350,7 +349,7 @@ public class UnitTestIpLogsService
 
         // Assert
         Assert.Equal(dbIds, ids);
-        mockCache.Verify(c => c.TryGetValueAsync<List<long>>(It.IsAny<string>()), Times.Once);
+        mockCache.Verify(c => c.TryGetValueAsync<List<long>>(It.IsAny<string>()), Times.Exactly(2));
         mockRepo.Verify(
             r => r.AsAsyncEnumerableStream(It.IsAny<ISpecification<UserIP, long>>(), It.IsAny<CancellationToken>()),
             Times.Once);
@@ -436,7 +435,7 @@ public class UnitTestIpLogsService
 
         // Assert
         Assert.Empty(ids);
-        mockCache.Verify(c => c.TryGetValueAsync<List<long>>(It.IsAny<string>()), Times.Once);
+        mockCache.Verify(c => c.TryGetValueAsync<List<long>>(It.IsAny<string>()), Times.Exactly(2));
         mockRepo.Verify(
             r => r.AsAsyncEnumerableStream(It.IsAny<ISpecification<UserIP, long>>(), It.IsAny<CancellationToken>()),
             Times.Once);

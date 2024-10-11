@@ -13,6 +13,18 @@ public class IPLogsService(IRepository repo, ICache cache, ILoggerFactory logger
 {
     private readonly ILogger<IPLogsService>? _logger = loggerFactory.CreateLogger<IPLogsService>();
 
+    private static readonly SemaphoreSlim SemaphoreFindUsersByIpPartStream = new(1, 1);
+
+    private static readonly SemaphoreSlim SemaphoreGetLastConnectionAsync = new(1, 1);
+
+    private static readonly SemaphoreSlim SemaphoreGetUserIPsStream = new(1, 1);
+
+    public static void DisposeSemaphores()
+    {
+        SemaphoreFindUsersByIpPartStream.Dispose();
+        SemaphoreGetLastConnectionAsync.Dispose();
+        SemaphoreGetUserIPsStream.Dispose();
+    }
     /// <inheritdoc />
     public async Task AddConnectionAsync(long userId, string ipAddress, DateTime eventTime,
         CancellationToken cancellationToken = default)
@@ -41,86 +53,121 @@ public class IPLogsService(IRepository repo, ICache cache, ILoggerFactory logger
     }
 
     /// <inheritdoc />
-    public async Task<UserLastConnection> GetLastConnectionAsync(long userId,
-        CancellationToken cancellationToken = default)
+    public async Task<UserLastConnection> GetLastConnectionAsync(long userId, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"{userId}_{nameof(GetLastConnectionAsync)}";
+        var spec = new UserSpecification.GetUserById(userId, true);
+        
+        var result = await TryGetCachedFirstOrDefaultAsync(cacheKey, spec, SemaphoreGetLastConnectionAsync, (Func<User?, UserLastConnection>)Selector, cancellationToken);
 
-        var (cached, userLastConnection) = await cache.TryGetValueAsync<UserLastConnection>(cacheKey).ConfigureAwait(false);
-        if (cached) return userLastConnection ?? new UserLastConnection();
-
-        var user = await repo.FirstOrDefaultAsync(new UserSpecification.GetUserById(userId, true),
-            cancellationToken).ConfigureAwait(false);
-
-        userLastConnection = new UserLastConnection
-            { LastConnectionTime = user?.LastConnectionTime, IPAddress = user?.IPAddress };
-        await cache.SetAsync(cacheKey, userLastConnection).ConfigureAwait(false);
-
-        if (user == null)
-            _logger?.LogWarning("User not found for userId: {UserId}", userId);
-        else
-            _logger?.LogWarning("User found for userId: {UserId}", userId);
-
-        return userLastConnection;
+        string message = result == null ? "User not found for userId: {UserId}" : "User found for userId: {UserId}";
+        _logger?.LogWarning(message, userId);
+        
+        return result ?? new UserLastConnection();
+        
+        UserLastConnection Selector(User? user)
+        {
+            return new UserLastConnection { LastConnectionTime = user?.LastConnectionTime, IPAddress = user?.IPAddress };
+        }
     }
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<string> GetUserIPsStream(long userId,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<string> GetUserIPsStream(long userId, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var cacheKey = $"{userId}_{nameof(GetUserIPsStream)}";
+        var spec = new UserSpecification.GetUserIpsById(userId, true);
 
-        var (cached, cachedIps) = await cache.TryGetValueAsync<List<string>>(cacheKey).ConfigureAwait(false);
+        await foreach (var item in GetCachedStream(cacheKey, spec, SemaphoreGetUserIPsStream, cancellationToken).ConfigureAwait(false)) yield return item;
+    }
 
-        if (!cached)
+    public async IAsyncEnumerable<long> FindUsersByIpPartStream(string ipPart, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var spec = new UserSpecification.FindUsersByIpPart(ipPart, true);
+        var cacheKey = $"{ipPart}_{nameof(FindUsersByIpPartStream)}";
+
+        await foreach (var item in GetCachedStream(cacheKey, spec, SemaphoreFindUsersByIpPartStream, cancellationToken).ConfigureAwait(false)) yield return item;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="cacheKey"></param>
+    /// <param name="spec"></param>
+    /// <param name="semaphore"></param>
+    /// <param name="selector"></param>
+    /// <param name="cancellationToken"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="TResult"></typeparam>
+    /// <returns></returns>
+    private async Task<TResult?> TryGetCachedFirstOrDefaultAsync<T, TResult>(string cacheKey, ISpecification<T> spec, SemaphoreSlim semaphore, Func<T?, TResult> selector, CancellationToken cancellationToken = default) where T : class
+    {
+        var (cached, cachedResult) = await cache.TryGetValueAsync<TResult>(cacheKey).ConfigureAwait(false);
+        if (cached) return cachedResult;
+
+        await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            cachedIps = [];
+            (cached, cachedResult) = await cache.TryGetValueAsync<TResult>(cacheKey).ConfigureAwait(false);
+            if (cached) return cachedResult;
 
-            await foreach (var ip in repo.AsAsyncEnumerableStream(
-                                   new UserSpecification.GetUserIpsById(userId, true), cancellationToken)
-                               .ConfigureAwait(false))
-            {
-                cachedIps.Add(ip);
-                yield return ip;
-            }
+            var result = await repo.FirstOrDefaultAsync(spec, cancellationToken).ConfigureAwait(false);
 
-            await cache.SetAsync(cacheKey, cachedIps).ConfigureAwait(false);
+            cachedResult = selector.Invoke(result);
+
+            await cache.SetAsync(cacheKey, cachedResult).ConfigureAwait(false);
+            return cachedResult;
         }
-        else
+        finally
         {
-            if (cachedIps == null) yield break;
-
-            foreach (var ip in cachedIps) yield return ip;
+            semaphore.Release();
         }
     }
 
-    /// <inheritdoc />
-    public async IAsyncEnumerable<long> FindUsersByIpPartStream(string ipPart,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    /// <summary>
+    /// </summary>
+    /// <param name="cacheKey"></param>
+    /// <param name="spec"></param>
+    /// <param name="semaphore"></param>
+    /// <param name="cancellationToken"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="TResult"></typeparam>
+    /// <returns></returns>
+    private async IAsyncEnumerable<TResult> GetCachedStream<T, TResult>(string cacheKey, ISpecification<T, TResult> spec, SemaphoreSlim semaphore, [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : class
     {
-        var cacheKey = $"{ipPart}_{nameof(FindUsersByIpPartStream)}";
+        var (isCached, cachedResult) = await cache.TryGetValueAsync<List<TResult>>(cacheKey).ConfigureAwait(false);
 
-        var (cached, cachedIps) = await cache.TryGetValueAsync<List<long>>(cacheKey).ConfigureAwait(false);
-
-        if (!cached)
+        if (isCached)
         {
-            cachedIps = [];
-
-            await foreach (var id in repo.AsAsyncEnumerableStream(
-                               new UserSpecification.FindUsersByIpPart(ipPart, true),
-                               cancellationToken).ConfigureAwait(false))
-            {
-                cachedIps.Add(id);
-                yield return id;
-            }
-
-            await cache.SetAsync(cacheKey, cachedIps).ConfigureAwait(false);
+            if (cachedResult == null) yield break;
+            foreach (var item in cachedResult) yield return item;
         }
         else
         {
-            if (cachedIps == null) yield break;
+            await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                (isCached, cachedResult) = await cache.TryGetValueAsync<List<TResult>>(cacheKey).ConfigureAwait(false);
 
-            foreach (var id in cachedIps) yield return id;
+                if (isCached)
+                {
+                    if (cachedResult == null) yield break;
+                    foreach (var ip in cachedResult) yield return ip;
+                }
+
+                cachedResult = [];
+
+                await foreach (var item in repo.AsAsyncEnumerableStream(spec, cancellationToken).ConfigureAwait(false))
+                {
+                    cachedResult.Add(item);
+                    yield return item;
+                }
+
+                await cache.SetAsync(cacheKey, cachedResult).ConfigureAwait(false);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
         }
     }
 }
